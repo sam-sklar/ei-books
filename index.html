@@ -586,6 +586,61 @@
     .unicorn-body { padding: 1.5rem; }
   }
 
+  /* SECTION LABELS */
+  .section-block {
+    grid-column: 1 / -1;
+  }
+
+  .section-divider {
+    border: none;
+    border-top: 2px solid var(--blue);
+    margin: 1.5rem 0 1rem;
+  }
+
+  .section-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: var(--blue);
+    margin-bottom: 1rem;
+  }
+
+  .section-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 2px;
+    margin-bottom: 0;
+  }
+
+  .section-grid .book-cover {
+    aspect-ratio: 2/3;
+  }
+
+  .section-grid .book-cover-placeholder {
+    aspect-ratio: 2/3;
+  }
+
+  .section-grid .book-title {
+    font-size: 0.9rem;
+  }
+
+  .section-grid .book-author {
+    font-size: 0.75rem;
+  }
+
+  .section-grid .book-meta {
+    padding: 0.85rem 1rem;
+  }
+
+  @media (max-width: 800px) {
+    .section-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  @media (max-width: 480px) {
+    .section-grid { grid-template-columns: repeat(1, 1fr); }
+  }
+
   /* ANIMATION */
   .book-card {
     animation: fadeIn 0.3s ease both;
@@ -807,7 +862,7 @@ const books = [
 const coverCache = {};
 
 function getCoverUrl(isbn) {
-  return `https://sam-sklar.github.io/ei-books/covers/${isbn}-L.jpg`;
+  return `https://sam-sklar.github.io/ei-books/covers/${isbn}.jpg`;
 }
 
 function getFallbackUrl(isbn) {
@@ -906,7 +961,7 @@ function filterAndRender() {
   const grid = document.getElementById('grid');
   grid.innerHTML = '';
 
-  // Special case: The Unicorn tab shows standalone feature only
+  // Special case: The Unicorn tab
   if (activeCategory === 'The Unicorn') {
     const unicorn = books.find(b => b.category === 'The Unicorn');
     if (unicorn) grid.appendChild(renderUnicorn(unicorn));
@@ -914,8 +969,36 @@ function filterAndRender() {
     return;
   }
 
+  // All view: show Unicorn + Core Four as special sections first
+  if (activeCategory === 'all' && !searchQuery) {
+    // Unicorn block
+    const unicorn = books.find(b => b.category === 'The Unicorn');
+    if (unicorn) grid.appendChild(renderUnicorn(unicorn));
+
+    // Core Four block
+    const coreFour = books.filter(b => b.category === 'Core Four');
+    const coreBlock = document.createElement('div');
+    coreBlock.className = 'section-block';
+    coreBlock.innerHTML = `
+      <hr class="section-divider">
+      <div class="section-label">★ The Core Four</div>
+      <div class="section-grid" id="core-four-grid"></div>
+      <hr class="section-divider" style="margin-top:1.5rem">
+    `;
+    grid.appendChild(coreBlock);
+    const coreFourGrid = coreBlock.querySelector('#core-four-grid');
+    coreFour.forEach((book, i) => coreFourGrid.appendChild(renderCard(book, i)));
+
+    // Rest of the books
+    const rest = books.filter(b => b.category !== 'The Unicorn' && b.category !== 'Core Four');
+    rest.forEach((book, i) => grid.appendChild(renderCard(book, i)));
+
+    document.getElementById('results-count').textContent = `${books.length} books`;
+    return;
+  }
+
   const filtered = books.filter(b => {
-    if (b.category === 'The Unicorn') return false; // never show in grid
+    if (b.category === 'The Unicorn') return false;
     const matchCat = activeCategory === 'all' || b.category === activeCategory;
     const q = searchQuery.toLowerCase();
     const matchSearch = !q || b.title.toLowerCase().includes(q) || b.author.toLowerCase().includes(q);
